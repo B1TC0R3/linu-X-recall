@@ -2,6 +2,10 @@ extern crate x11;
 extern crate x11_dl;
 
 use std::ptr;
+use chrono::{
+    DateTime,
+    Local
+};
 use anyhow::{
     Result,
     bail
@@ -28,6 +32,7 @@ pub struct Window {
     pub title: String,
     pub id: u64,
     pub apptype: AppType,
+    pub timestamp: DateTime<Local>,
 }
 
 impl Window {
@@ -35,7 +40,8 @@ impl Window {
         Window {
             title: String::from(""),
             id: 0,
-            apptype: AppType::Error
+            apptype: AppType::Error,
+            timestamp: Local::now(),
         }
     }
 }
@@ -88,7 +94,6 @@ pub fn get_windows() -> Result<Vec<Window>> {
 
         if !window_name.is_null() {
             let title = unsafe { std::ffi::CStr::from_ptr(window_name) }.to_string_lossy().into_owned();
-            println!("Window ID: {} - Title: {}", window, title);
             win.title = title;
             win.id = window;
         }

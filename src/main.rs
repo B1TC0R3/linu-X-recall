@@ -12,6 +12,6 @@ fn main() {
     };
 
     for win in windows {
-        println!("ID: {} - Title: {}", win.id, win.title);
+        println!("Time: {}, ID: {}, Title: {}", win.timestamp, win.id, win.title);
     }
 }
