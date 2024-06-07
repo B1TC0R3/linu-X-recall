@@ -6,12 +6,11 @@ pub mod keylogger;
 use x11_windows::{get_windows, Window};
 use dispatcher::{interval, single};
 use screenshot::screenshot_full;
-use std::sync::Arc;
 use chrono::Local;
+use std::borrow::BorrowMut;
 use std::time::Duration;
 use std::thread;
-
-
+use std::sync::{Arc, Mutex};
 use std::{
     path::Path,
     process::exit,
@@ -23,15 +22,24 @@ pub struct Config {
     curdir: String,
 }
 
-pub fn get_config() -> Arc<Config> {
-    Arc::new(
-        Config {
-            logdir: "var/log/recall".to_string(),
-            curdir: Local::now().format("%Y/%M/%D/%H").to_string(),
-        }
-    )
+impl Config {
+    fn get_current_logdir(&self) -> String {
+        Path::new(
+            &self.logdir
+        ).join(
+            &self.curdir
+        ).display().to_string()
+    }
 }
 
+pub fn get_config() -> Arc<Mutex<Config>> {
+    Arc::new(Mutex::new(
+        Config {
+            logdir: "var/log/recall".to_string(),
+            curdir: Local::now().format("%Y/%B/%d/%H/%M").to_string(),
+        }
+    ))
+}
 
 // Screenshots -> Only if not locked
 // Deamon
@@ -40,24 +48,15 @@ pub fn get_config() -> Arc<Config> {
 // Browser cookies
 // Keylogger
 
-
-
-fn update_dirs() {
+fn update_dirs(mut config: Arc<Mutex<Config>>) {
     loop {
-        let mut config = Config {
-            logdir: "var/log/recall".to_string(),
-            curdir: Local::now().format("%Y/%M/%D/%H").to_string(),
-        };
+        let curdir = Local::now().format("%Y/%B/%d/%H/%M").to_string();
 
-        thread::sleep(Duration::from_secs(30));
-
-        let curdir = Local::now().format("%Y/%M/%D/%H").to_string();
-        
-        if config.curdir == curdir {
+        if config.lock().unwrap().curdir == curdir {
             return;
         }
-        
-        let path = Path::new(&config.logdir).join(&config.curdir);
+
+        let path = Path::new(&config.lock().unwrap().logdir).join(&config.lock().unwrap().curdir);
         if !Path::new(&path).exists() {
            match fs::create_dir_all(&path) {
                 Ok(_) => { return; }
@@ -67,17 +66,19 @@ fn update_dirs() {
                 }
             }
         }
-        config.curdir = curdir;
+
+        config.borrow_mut().lock().unwrap().curdir = curdir;
+        thread::sleep(Duration::from_secs(30));
     }
 }
 
 
-fn take_screenshot(config: Arc<Config>) {
-    screenshot_full(Path::new(&config.logdir)).unwrap()
+fn take_screenshot(config: Arc<Mutex<Config>>) {
+    screenshot_full(Path::new(&config.lock().unwrap().get_current_logdir())).unwrap();
 }
 
-fn capture_keys(config: Arc<Config>) {
-    keylogger::run(Path::new(&config.logdir))
+fn capture_keys(config: Arc<Mutex<Config>>) {
+    keylogger::run(Path::new(&config.lock().unwrap().get_current_logdir()))
 }
 
 fn init_logdir(dir: &str) {
@@ -94,7 +95,7 @@ fn init_logdir(dir: &str) {
 
 fn main() {
     let config = get_config();
-    init_logdir(&config.logdir);
+    init_logdir(&config.lock().unwrap().get_current_logdir());
 
     let _windows: Vec<Window> = match get_windows() {
         Ok(windows) => windows,
@@ -104,11 +105,11 @@ fn main() {
         }
     };
 
+    let dirupdate_handle = single(update_dirs, config.clone());
     let screenshot_threat = interval(10000, take_screenshot, config.clone());
     let keylogger_threat = single(capture_keys, config.clone());
 
+    dirupdate_handle.join().unwrap();
     screenshot_threat.join().unwrap();
     keylogger_threat.join().unwrap();
-
-    update_dirs();
 }

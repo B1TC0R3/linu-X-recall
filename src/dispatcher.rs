@@ -2,9 +2,9 @@ use crate::Config;
 use std::thread;
 use std::thread::JoinHandle;
 use std::time::Duration;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
-pub fn interval(delay: u64, function: fn(Arc<Config>), config: Arc<Config>) -> JoinHandle<()> {
+pub fn interval(delay: u64, function: fn(Arc<Mutex<Config>>), config: Arc<Mutex<Config>>) -> JoinHandle<()> {
     thread::spawn(move || {
         loop {
             function(config.clone());
@@ -13,7 +13,7 @@ pub fn interval(delay: u64, function: fn(Arc<Config>), config: Arc<Config>) -> J
     })
 }
 
-pub fn single(function: fn(Arc<Config>), config: Arc<Config>) -> JoinHandle<()> {
+pub fn single(function: fn(Arc<Mutex<Config>>), config: Arc<Mutex<Config>>) -> JoinHandle<()> {
     thread::spawn(move || {
         function(config.clone());
     })
