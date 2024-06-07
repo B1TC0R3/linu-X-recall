@@ -1,7 +1,7 @@
 use xcap::Monitor;
 use std::path::Path;
 use anyhow::{Result, Context};
-use chrono::Local; 
+use chrono::Local;
 
 
 fn normalized(filename: &str) -> String {
@@ -12,9 +12,8 @@ fn normalized(filename: &str) -> String {
         .replace("/", "")
 }
 
-pub fn screenshot_full(log_dir: &Path)  -> Result<()> {
+pub fn screenshot_full(log_dir: &Path) -> Result<()> {
     let timestamp_formatted = Local::now().format("%Y-%m-%d-%H:%m:%S");
-    
 
     for monitor in Monitor::all()? {
         let screenshot_name = format!("screenshot-{}-{}.png", timestamp_formatted, normalized(monitor.name()));
@@ -23,7 +22,6 @@ pub fn screenshot_full(log_dir: &Path)  -> Result<()> {
         println!("Monitor Name: {}", monitor.name());
         screenshot.save(screenshot_path)?;
     }
-
 
     Ok(())
 }

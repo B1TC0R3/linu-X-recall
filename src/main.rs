@@ -9,11 +9,11 @@ use std::{
     fs,
 };
 
-struct Config {
+pub struct Config {
     logdir: &str,
 }
 
-fn get_config() -> Arc<Mutex<Config>> {
+pub fn get_config() -> Arc<Mutex<Config>> {
     Arc::new(Mutex::new(
         Config {
             logdir: "var/log/recall"
@@ -28,14 +28,12 @@ fn get_config() -> Arc<Mutex<Config>> {
 // Browser cookies
 // Keylogger
 
-
-
-fn init_logdir(dir) {
-    if !Path::new(LOG_DIR).exists() {
-        match fs::create_dir_all(LOG_DIR) {
+fn init_logdir(dir: &str) {
+    if !Path::new(dir).exists() {
+        match fs::create_dir_all(dir) {
             Ok(_) => { return; }
             Err(e) => {
-                eprintln!("Error creating recall logdir '{}': {}", LOG_DIR, e);
+                eprintln!("Error creating recall logdir '{}': {}", dir, e);
                 exit(-1);
             }
         }
