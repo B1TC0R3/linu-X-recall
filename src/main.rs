@@ -1,8 +1,5 @@
 pub mod x11_windows;
-<<<<<<< HEAD
-=======
 pub mod screenshot;
->>>>>>> 63147e8 ([DEV] add screenshot feature)
 
 use x11_windows::{Window, get_windows};
 use screenshot::{screenshot_full};
