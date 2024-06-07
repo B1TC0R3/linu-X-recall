@@ -6,9 +6,9 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.86"
 chrono = "0.4.38"
-screenshot-rs = "=0.1.5"
 x11 = { version = "2.21.0", features= ["all"] }
 x11-dl = "2.21.0"
+xcap = "0.0.10"
 
 
 [build-dependencies]
