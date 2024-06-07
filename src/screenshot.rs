@@ -1,7 +1,7 @@
 use xcap::Monitor;
 use std::path::Path;
-use anyhow::{Result, Context};
-use chrono::Local;
+use anyhow::{Result};
+use chrono::Local; 
 
 
 fn normalized(filename: &str) -> String {
