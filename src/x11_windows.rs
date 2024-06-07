@@ -2,14 +2,17 @@ extern crate x11;
 extern crate x11_dl;
 
 use std::ptr;
+
 use chrono::{
     DateTime,
     Local
 };
+
 use anyhow::{
     Result,
     bail
 };
+
 use x11::xlib::{
     Display,
     XOpenDisplay,
@@ -88,7 +91,7 @@ pub fn get_windows() -> Result<Vec<Window>> {
             window_name = text_prop.value as *mut i8;
         } else if unsafe { XFetchName(display, window, &mut window_name) } != 0 && !window_name.is_null() {
             // TODO Fallback to XFetchName if XGetWMName fails
-            eprintln!("XGetWMName failed");
+            eprintln!("XGetWMName failed - Aborting");
             return Ok(windows);
         }
 
@@ -96,13 +99,16 @@ pub fn get_windows() -> Result<Vec<Window>> {
             let title = unsafe { std::ffi::CStr::from_ptr(window_name) }.to_string_lossy().into_owned();
             win.title = title;
             win.id = window;
+            win.apptype = AppType::Other;
         }
 
         if !window_name.is_null() {
             unsafe { x11::xlib::XFree(window_name as *mut std::ffi::c_void) };
         }
 
-        windows.push(win);
+        if !matches!(win.apptype, AppType::Error) {
+            windows.push(win);
+        }
     }
 
     // Free the list of child windows

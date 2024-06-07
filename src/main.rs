@@ -1,11 +1,10 @@
-pub mod x11_windows;
 pub mod screenshot;
-
+pub mod dispatcher;
 use x11_windows::{Window, get_windows};
-use screenshot::{screenshot_full};
+use screenshot::screenshot_full;
 
 use std::{
-    path::{Path},
+    path::Path,
     process::exit,
     fs,
 };
@@ -40,7 +39,6 @@ fn init_logdir() {
     }
 }
 
-
 fn main() {
     init_logdir();
 
@@ -53,5 +51,4 @@ fn main() {
     };
 
     screenshot_full(Path::new(LOG_DIR));
-
 }
