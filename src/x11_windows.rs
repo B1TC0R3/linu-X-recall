@@ -1,16 +1,28 @@
 extern crate x11;
 extern crate x11_dl;
 
-use x11::xlib::{Display, XOpenDisplay, XDefaultRootWindow, XQueryTree, XFetchName, XTextProperty, XGetWMName};
 use std::ptr;
+use anyhow::{
+    Result,
+    bail
+};
+use x11::xlib::{
+    Display,
+    XOpenDisplay,
+    XDefaultRootWindow,
+    XQueryTree,
+    XFetchName,
+    XTextProperty,
+    XGetWMName
+};
 
 pub enum AppType {
+    // TODO add more types later on for specializde functionality
     Browser,
     Terminal,
     Other,
-    Error, 
+    Error,
 }
-
 
 pub struct Window {
     pub title: String,
@@ -20,20 +32,22 @@ pub struct Window {
 
 impl Window {
     fn new() -> Window {
-        Window { title: String::from(""), id: 0, apptype: AppType::Error }
+        Window {
+            title: String::from(""),
+            id: 0,
+            apptype: AppType::Error
+        }
     }
 }
 
-
-
-pub fn get_windows() -> Vec<Window> {
+pub fn get_windows() -> Result<Vec<Window>> {
     let mut windows: Vec<Window> = Vec::new();
 
     // Open connection to the X server
     let display: *mut Display = unsafe { XOpenDisplay(ptr::null()) };
     if display.is_null() {
         eprintln!("Unable to open X display");
-        return windows;
+        bail!("Unable to attach to display.");
     }
 
     // Get the root window
@@ -44,9 +58,11 @@ pub fn get_windows() -> Vec<Window> {
     let mut parent_return: u64 = 0;
     let mut children: *mut u64 = ptr::null_mut();
     let mut nchildren: u32 = 0;
-    if unsafe { XQueryTree(display, root, &mut root_return, &mut parent_return, &mut children, &mut nchildren) } == 0 {
+
+    if unsafe {
+        XQueryTree(display, root, &mut root_return, &mut parent_return, &mut children, &mut nchildren)} == 0 {
         eprintln!("Unable to query the window tree");
-        return windows;
+        return Ok(windows);
     }
 
     // Iterate over the child windows and get their titles
@@ -65,7 +81,9 @@ pub fn get_windows() -> Vec<Window> {
         if unsafe { XGetWMName(display, window, &mut text_prop) } != 0 && !text_prop.value.is_null() {
             window_name = text_prop.value as *mut i8;
         } else if unsafe { XFetchName(display, window, &mut window_name) } != 0 && !window_name.is_null() {
-            // Fallback to XFetchName if XGetWMName fails
+            // TODO Fallback to XFetchName if XGetWMName fails
+            eprintln!("XGetWMName failed");
+            return Ok(windows);
         }
 
         if !window_name.is_null() {
@@ -89,5 +107,5 @@ pub fn get_windows() -> Vec<Window> {
 
     // Close the connection to the X server
     unsafe { x11::xlib::XCloseDisplay(display) };
-    return windows;
+    return Ok(windows);
 }
