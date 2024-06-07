@@ -1,13 +1,24 @@
-use std::{thread, time};
-use anyhow::Result;
+use std::thread;
+use std::time::Duration;
+use std::sync::{Arc, Mutex};
 
-fn interval(interval: u64, function: fn() -> Result<()>) {
-    thread::spawn(move || {
-        let sleep_duration = time::Duration::from_millis(interval);
+struct Config {
+    logpath: String,
+}
 
+fn get_config() -> Arc<Mutex<Config>> {
+    Arc::new(Mutex::new(
+        Config {
+            logpath: "/var/".to_string()
+        }
+    ))
+}
+
+fn interval(delay: Duration, function: fn(Arc<Mutex<Config>>), config) {
+    let _ = thread::spawn(move || {
         loop {
-            let _ = function();
-            thread::sleep(sleep_duration);
+            function(config);
+            thread::sleep(delay);
         }
     });
 }
