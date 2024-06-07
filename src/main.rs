@@ -1,7 +1,9 @@
 pub mod screenshot;
 pub mod dispatcher;
-use x11_windows::{Window, get_windows};
+pub mod x11_windows;
+use x11_windows::{get_windows, Window};
 use screenshot::screenshot_full;
+use std::sync::Arc;
 
 use std::{
     path::Path,
@@ -10,15 +12,15 @@ use std::{
 };
 
 pub struct Config {
-    logdir: &str,
+    logdir: String,
 }
 
-pub fn get_config() -> Arc<Mutex<Config>> {
-    Arc::new(Mutex::new(
+pub fn get_config() -> Arc<Config> {
+    Arc::new(
         Config {
-            logdir: "var/log/recall"
+            logdir: "var/log/recall".to_string()
         }
-    ))
+    )
 }
 
 // Screenshots -> Only if not locked
@@ -42,7 +44,7 @@ fn init_logdir(dir: &str) {
 
 fn main() {
     let config = get_config();
-    init_logdir(config.logdir);
+    init_logdir(&config.logdir);
 
     let windows: Vec<Window> = match get_windows() {
         Ok(windows) => windows,
@@ -52,5 +54,5 @@ fn main() {
         }
     };
 
-    screenshot_full(Path::new(config.logdir));
+    screenshot_full(Path::new(&config.clone().logdir)).unwrap();
 }
