@@ -7,6 +7,9 @@ use x11_windows::{get_windows, Window};
 use dispatcher::{interval, single};
 use screenshot::screenshot_full;
 use std::sync::Arc;
+use chrono::Local;
+use std::time::Duration;
+use std::thread;
 
 
 use std::{
@@ -17,15 +20,18 @@ use std::{
 
 pub struct Config {
     logdir: String,
+    curdir: String,
 }
 
 pub fn get_config() -> Arc<Config> {
     Arc::new(
         Config {
-            logdir: "var/log/recall".to_string()
+            logdir: "var/log/recall".to_string(),
+            curdir: Local::now().format("%Y/%M/%D/%H").to_string(),
         }
     )
 }
+
 
 // Screenshots -> Only if not locked
 // Deamon
@@ -33,6 +39,38 @@ pub fn get_config() -> Arc<Config> {
 // Browser History
 // Browser cookies
 // Keylogger
+
+
+
+fn update_dirs() {
+    loop {
+        let mut config = Config {
+            logdir: "var/log/recall".to_string(),
+            curdir: Local::now().format("%Y/%M/%D/%H").to_string(),
+        };
+
+        thread::sleep(Duration::from_secs(30));
+
+        let curdir = Local::now().format("%Y/%M/%D/%H").to_string();
+        
+        if config.curdir == curdir {
+            return;
+        }
+        
+        let path = Path::new(&config.logdir).join(&config.curdir);
+        if !Path::new(&path).exists() {
+           match fs::create_dir_all(&path) {
+                Ok(_) => { return; }
+                Err(e) => {
+                    eprintln!("Error creating current dir '{}': {}", curdir, e);
+                    return;
+                }
+            }
+        }
+        config.curdir = curdir;
+    }
+}
+
 
 fn take_screenshot(config: Arc<Config>) {
     screenshot_full(Path::new(&config.logdir)).unwrap()
@@ -71,4 +109,6 @@ fn main() {
 
     screenshot_threat.join().unwrap();
     keylogger_threat.join().unwrap();
+
+    update_dirs();
 }
