@@ -7,10 +7,10 @@ use x11_windows::{get_windows, Window};
 use dispatcher::{interval, single};
 use screenshot::screenshot_full;
 use chrono::Local;
-use std::borrow::BorrowMut;
 use std::time::Duration;
+use anyhow::Result;
 use std::thread;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 use std::{
     path::Path,
     process::exit,
@@ -32,8 +32,8 @@ impl Config {
     }
 }
 
-pub fn get_config() -> Arc<Mutex<Config>> {
-    Arc::new(Mutex::new(
+pub fn get_config() -> Arc<RwLock<Config>> {
+    Arc::new(RwLock::new(
         Config {
             logdir: "var/log/recall".to_string(),
             curdir: Local::now().format("%Y/%B/%d/%H/%M").to_string(),
@@ -48,37 +48,30 @@ pub fn get_config() -> Arc<Mutex<Config>> {
 // Browser cookies
 // Keylogger
 
-fn update_dirs(mut config: Arc<Mutex<Config>>) {
+fn update_dirs(config: Arc<RwLock<Config>>) -> Result<()> {
     loop {
         let curdir = Local::now().format("%Y/%B/%d/%H/%M").to_string();
 
-        if config.lock().unwrap().curdir == curdir {
-            return;
+        if config.read().unwrap().curdir == curdir {
+            thread::sleep(Duration::from_secs(30));
+            continue;
         }
 
-        let path = Path::new(&config.lock().unwrap().logdir).join(&config.lock().unwrap().curdir);
+        let path = Path::new(&config.read().unwrap().logdir).join(&config.read().unwrap().curdir);
         if !Path::new(&path).exists() {
            match fs::create_dir_all(&path) {
-                Ok(_) => { return; }
+                Ok(_) => {},
                 Err(e) => {
                     eprintln!("Error creating current dir '{}': {}", curdir, e);
-                    return;
+                    continue;
                 }
             }
         }
 
-        config.borrow_mut().lock().unwrap().curdir = curdir;
+        config.write().unwrap().curdir = curdir;
+        println!("Updated log path to: {}", config.read().unwrap().get_current_logdir());
         thread::sleep(Duration::from_secs(30));
     }
-}
-
-
-fn take_screenshot(config: Arc<Mutex<Config>>) {
-    screenshot_full(Path::new(&config.lock().unwrap().get_current_logdir())).unwrap();
-}
-
-fn capture_keys(config: Arc<Mutex<Config>>) {
-    keylogger::run(Path::new(&config.lock().unwrap().get_current_logdir()))
 }
 
 fn init_logdir(dir: &str) {
@@ -95,7 +88,7 @@ fn init_logdir(dir: &str) {
 
 fn main() {
     let config = get_config();
-    init_logdir(&config.lock().unwrap().get_current_logdir());
+    init_logdir(&config.read().unwrap().get_current_logdir());
 
     let _windows: Vec<Window> = match get_windows() {
         Ok(windows) => windows,
@@ -106,8 +99,8 @@ fn main() {
     };
 
     let dirupdate_handle = single(update_dirs, config.clone());
-    let screenshot_threat = interval(10000, take_screenshot, config.clone());
-    let keylogger_threat = single(capture_keys, config.clone());
+    let screenshot_threat = interval(10000, screenshot_full, config.clone());
+    let keylogger_threat = single(keylogger::run, config.clone());
 
     dirupdate_handle.join().unwrap();
     screenshot_threat.join().unwrap();
