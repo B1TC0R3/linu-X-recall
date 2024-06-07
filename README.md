@@ -12,4 +12,4 @@ In case you have any issues or recommendations, feel free to open an Issue or Pu
 
 
 
-Made with <3 by B1tc0r3 and R4pt0r
+Made with ❤️  by B1TC0R3 and R4pt0r
