@@ -9,14 +9,17 @@ use std::{
     fs,
 };
 
-const LOG_DIR: &str = "var/log/recall";
+struct Config {
+    logdir: &str,
+}
 
-/*
-struct Context {
-    logging_folder: Path,
-    day_folder: Path,
-    hour_folder: Path,
-}*/
+fn get_config() -> Arc<Mutex<Config>> {
+    Arc::new(Mutex::new(
+        Config {
+            logdir: "var/log/recall"
+        }
+    ))
+}
 
 // Screenshots -> Only if not locked
 // Deamon
@@ -27,7 +30,7 @@ struct Context {
 
 
 
-fn init_logdir() { 
+fn init_logdir(dir) {
     if !Path::new(LOG_DIR).exists() {
         match fs::create_dir_all(LOG_DIR) {
             Ok(_) => { return; }
@@ -40,7 +43,8 @@ fn init_logdir() {
 }
 
 fn main() {
-    init_logdir();
+    let config = get_config();
+    init_logdir(config.logdir);
 
     let windows: Vec<Window> = match get_windows() {
         Ok(windows) => windows,
@@ -50,5 +54,5 @@ fn main() {
         }
     };
 
-    screenshot_full(Path::new(LOG_DIR));
+    screenshot_full(Path::new(config.logdir));
 }
